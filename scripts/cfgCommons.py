@@ -40,8 +40,7 @@ class Cfg:
         commonSection = 'common'
 
         # List of attributes of framework section to be appended rather then ovewrriden (if the same parameter is defined in more config files)
-        frameworkAppend = ['xls', 'intents', 'entities', 'dialogs', 'functions', 'generated_intents',
-                           'generated_entities', 'generated_dialog']
+        frameworkAppend = ['xls', 'intents', 'entities', 'dialogs', 'functions']
 
         if args.common_configFilePaths:
             try:

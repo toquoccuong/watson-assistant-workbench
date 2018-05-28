@@ -15,6 +15,8 @@ limitations under the License.
 
 import lxml.etree as XML
 from wawCommons import eprintf, toIntentName
+import unicodedata
+import re
 
 # Watson Assistant limits number of options currently to 5, we cut the end of the list of options if it is longer
 MAX_OPTIONS = 50
@@ -31,14 +33,16 @@ class XMLHandler(object):
             if not intentData.generateNodes():
                 continue
 
-            normName = toIntentName('soft', None, intent)
             # construct the XML structure for each intent
-            nodeXml = XML.Element('node', name=normName.decode('utf-8'))
+            nodeXml = XML.Element('node', name=self._make_node_id(intent))
+            # normName = toIntentName('soft', None, intent)
+            # nodeXml = XML.Element('node', name=normName)
 
             conditionXml = XML.Element('condition')
-            conditionXml.text = intent.decode('utf-8') if intent.decode('utf-8').startswith(u'#') else u'#' + intent.decode('utf-8')
+            # conditionXml.text = intent.decode('utf-8') if intent.decode('utf-8').startswith(u'#') else u'#' + intent.decode('utf-8')
+            conditionXml.text = intent if intent.startswith(u'#') else u'#' + intent
             nodeXml.append(conditionXml)
-
+            
             nodeXml.append(self._createOutputElement(intentData.getChannelOutputs(), intentData.getButtons(), intentData.getFoldable()))
             if intentData.getVariables():
                 nodeXml.append(self._createContextElement(intentData.getVariables()))
@@ -48,7 +52,6 @@ class XMLHandler(object):
             nodesXml.append(nodeXml)
 
         return nodesXml
-
 
     def printXml(self, xmlDocument, prettyPrint=True):
         if prettyPrint:
@@ -63,7 +66,6 @@ class XMLHandler(object):
             for channelName, channelValues in channels.iteritems():
                 if channelName == '1':
                     textValuesXml = XML.Element('textValues')
-
                     for item in channelValues:
                         textValuesXml.append(self._createXmlElement('values', item))
                         outputXml.append(textValuesXml)
@@ -72,25 +74,18 @@ class XMLHandler(object):
                 output = self._concatenateOutputs(channelValues)
                 if channelName == '2':
                     outputXml.append(self._createXmlElement('timeout', output))
-
                 elif channelName == '3':
                     outputXml.append(self._createXmlElement('sound', output))
-
                 elif channelName == '4':
                     outputXml.append(self._createXmlElement('tts', output))
-
                 elif channelName == '5':
                     outputXml.append(self._createXmlElement('talking_head', output))
-
                 elif channelName == '6':
                     outputXml.append(self._createXmlElement('paper_head', output))
-
                 elif channelName == '7':
                     outputXml.append(self._createXmlElement('graphics', output))
-
                 elif channelName == '8':
                     outputXml.append(self._createXmlElement('url', output))
-
                 else:
                     eprintf('WARNING: Unrecognized channel: %s, value: %s\n', channelName, output)
 
@@ -165,9 +160,13 @@ class XMLHandler(object):
 
     def _createGotoElement(self, target, selector):
         gotoXml = XML.Element('goto')
-        gotoXml.append(self._createXmlElement('target', target))
+        gotoXml.append(self._createXmlElement('target', self._make_node_id(target))) # apply the same normalization for target as for node id, so that they realy do match
         gotoXml.append(self._createXmlElement('selector', selector))
         return gotoXml
+     
+    def _make_node_id(self, condition):
+        condition = unicodedata.normalize('NFD', condition if isinstance(condition, unicode) else unicode(condition, 'utf-8')).encode('ascii', 'ignore')
+        return re.compile("[^a-zA-Z\d\s\-\_]").sub("_", condition)
 
     def _createXmlElement(self, name, value):
         if name=='values':

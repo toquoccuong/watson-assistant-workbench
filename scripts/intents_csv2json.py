@@ -30,7 +30,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--soft', required=False, help='soft name policy - change intents and entities names without error.', action='store_true', default="")
     parser.add_argument('-v','--common_verbose', required=False, help='verbosity', action='store_true')
     args = parser.parse_args(sys.argv[1:])
-    config = Cfg(args);
+    config = Cfg(args)
 
     VERBOSE = hasattr(config, 'common_verbose')
     NAME_POLICY = 'soft' if args.soft else 'hard'
@@ -46,7 +46,7 @@ if __name__ == '__main__':
 
     pathList = getattr(config, 'common_intents')
     if hasattr(config, 'common_generated_intents'):
-        pathList = pathList + getattr(config, 'common_generated_intents')
+        pathList = pathList + [getattr(config, 'common_generated_intents')]
 
     filesAtPath = getFilesAtPath(pathList)
     for intentFileName in sorted(filesAtPath):

@@ -27,8 +27,20 @@ echo "--------------------------------------------------------------------------
 echo "-- Dialog, intents from XLS to XML, CSV";
 echo "--------------------------------------------------------------------------------";
 mkdir -p tests/data/dialog/generated;
-python scripts/dialog_xls2xml.py -x tests/data/xls/E_CZ_T2C_authoring.xlsx -gd tests/data/dialog/generated -gi "tests/data/intents" -ge "tests/data/entities" -v;
+python scripts/dialog_xls2xml.py -x tests/data/xls -gd "tests/data/dialog/generated" -gi "tests/data/intents" -ge "tests/data/entities" -v;
 stopIfFailed $?;
+
+echo "test @entity:(<x>) blocks"
+grep "\#CO_JE.*@PREDMET:(Z.vada)" tests/data/dialog/generated/cond_x_test.xml
+stopIfFailed $?;
+grep "\#CO_JE.*@PREDMET:(V.stra.n. stav)" tests/data/dialog/generated/cond_x_test.xml
+stopIfFailed $?;
+grep "\#CO_JE.*@PREDMET:(Vyrovn.vac. trh)" tests/data/dialog/generated/cond_x_test.xml
+stopIfFailed $?;
+echo "test buttons in @entity:(<x>) blocks"
+grep "\#CO_JE.*@PREDMET:(Buttons do not belong here)" tests/data/dialog/generated/cond_x_test.xml
+stopIfFailed $?;
+
 ./ci/artifactory-deploy.sh "tests/data/dialog/generated/*";
 
 echo "--------------------------------------------------------------------------------";

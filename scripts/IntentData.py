@@ -76,23 +76,27 @@ class IntentData(object):
         """ Read the raw output and store all data from it - 
             channel outputs, context variables and jumpto definitions. """
         self._rawOutputs.append(rawOutputs)
-        if not isinstance(rawOutputs, tuple) or len(rawOutputs) < 1:
+        if not isinstance(rawOutputs, tuple) or sum([1 if x else 0 for x in rawOutputs]) == 0:
             eprintf('Warning: rawOutput does not contain any data: %s\n', rawOutputs)
         
-        for item in re.split('%%', rawOutputs[0]):
-            if not item: continue
-            if item.startswith(u'$'):
-                self.__handleVariableDefinition(item[1:])
-            elif item.startswith(u'B'):
-                self.__handleButtonDefinition(item[1:])
-            elif item.startswith(u'F'):
-                self.__handleFoldableDefinition(item[1:])
-            elif item.startswith(u':'):
-                self.__handleJumpToDefinition(item[1:], labelsMap)
-            else:
-                self.__handleChannelDefinition(item)
+        if len(rawOutputs) >= 1 and (isinstance(rawOutputs[0], str) or isinstance(rawOutputs[0], unicode)):
+            items = re.split('%%', rawOutputs[0])
+            self.__handleChannelDefinition(items[0])
+            for item_i in range(1, len(items)):
+                item = items[item_i]
+                if not item: continue
+                if item.startswith(u'$'):
+                    self.__handleVariableDefinition(item[1:])
+                elif item.startswith(u'B'):
+                    self.__handleButtonDefinition(item[1:])
+                elif item.startswith(u'F'):
+                    self.__handleFoldableDefinition(item[1:])
+                elif item.startswith(u':'):
+                    self.__handleJumpToDefinition(item[1:], labelsMap)
+                else:
+                    self.__handleChannelDefinition(item)
 
-        if len(rawOutputs) >= 3:
+        if len(rawOutputs) >= 2:
             if rawOutputs[1]:
                 self.__handleButtonDefinition(rawOutputs[1])
             if rawOutputs[2]:
@@ -118,7 +122,7 @@ class IntentData(object):
                 selector = 'condition'
 
         if label not in labelsMap:
-            self.setJumpTo(label, selector)  # label can point at a node name defined externally
+            self.setJumpTo(label, selector)  # label can point at a node name defined
             eprintf('Warning: using jumpto label that was not defined before: %s, expecting that it is external reference to a node name.\n', label)
         else:
             self.setJumpTo(labelsMap[label], selector)

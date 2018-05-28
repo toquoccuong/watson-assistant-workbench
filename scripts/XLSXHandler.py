@@ -46,8 +46,7 @@ class XLSXHandler(object):
 
 
     def getDialogData(self):
-        """ Return DialogData.
-            This map is global across all processed Excel source files. """
+        """ Return DialogData. This map is global across all processed Excel source files. """
         return self._dialogData
 
 
@@ -132,8 +131,8 @@ class XLSXHandler(object):
             if label in self._labelsMap:
                 printf('Warning: Found a label that has already been assigned to an intent and will be overwritten. Label: %s\n', label)
             del block[0]
-            if not block or not block[0][0]:
-                printf('WARNING: First cell of the goto block does not contain any data. (domain=%s, prefix=%s, label=%s)\n', domain, prefix, label)
+            if not block or not block[0][0]:	
+                printf('WARNING: First cell of the goto block does not contain any data. (domain=%s, prefix=%s, label=%s)\n', domain, prefix, label)	
                 return
             firstCell = block[0][0]
 
@@ -141,33 +140,34 @@ class XLSXHandler(object):
         if firstCell.startswith(u'@'):
             self.__handleEntityBlock(block)
             return
-
+        
         # Check the intent name
         conditionHasX = Dialog.X_PLACEHOLDER in firstCell
-        intentName = firstCell
+        intent = unidecode.unidecode(firstCell)
 
         if self.__isConditionBlock(firstCell):
             if conditionHasX and block[1][0]:
-                intentName = re.sub(Dialog.X_PLACEHOLDER, block[1][0], firstCell)
+                intent = re.sub(Dialog.X_PLACEHOLDER, block[1][0], firstCell)
         else:
             if firstCell.startswith(u'#'):
-                intentName = firstCell[1:]
+                intent = firstCell[1:] 
             else:
-                # Create intent name from first sentence by replacing all spaces with underscores and removing accents, commas and slashes
-                intentName = re.sub("[/,?']", '', re.sub(' ', '_', unidecode.unidecode(intentName), re.UNICODE))
+                # Create intent name from first sentence by replacing all spaces with underscores and removing accents, commas and slashes	+                # Create fully qualified intent name
+                # intent = re.sub("[/,?']", '', re.sub(' ', '_', unidecode.unidecode(intent), re.UNICODE))
+                # Create fully qualified intent name
+                # intent = unidecode.unidecode(intent)
+                intent = toIntentName(NAME_POLICY, None, domain, prefix, intent)
 
-            # check intent name
-            fullIntentName = toIntentName(NAME_POLICY, None, domain, prefix, intentName)
-
-            self._dialogData.getIntentData(fullIntentName, domain)
-            self._dataBlocks.append((domain, prefix, fullIntentName, block))
-            if label:
-                self._labelsMap[label] = fullIntentName.decode('utf-8')
+        self._dialogData.getIntentData(intent, domain)
+        self._dataBlocks.append((domain, prefix, intent, block))
+        if label:
+            self._labelsMap[label] = intent
 
 
     def __isConditionBlock(self, firstCell):
         return Dialog.X_PLACEHOLDER in firstCell or len(re.sub('[^#$@&|]', '', firstCell)) > 1
 
+            
     def __handleConditionBlock(self, intent, block, domain):
         """ Read condition definition from current block and save it into Dialog data structure. 
             Replace all <x> placeholders on the first line with values from remaining lines. """
@@ -187,7 +187,12 @@ class XLSXHandler(object):
                 if row[0] and conditionHasX:
                     intent = re.sub(Dialog.X_PLACEHOLDER, row[0], conditionTemplate)
                     intentData = self._dialogData.getIntentData(intent, domain)
-                intentData.addRawOutput(row[1:], self._labelsMap)
+                # check for empty output and print message with error location info
+                if isinstance(row[1:], tuple) and sum([1 if x else 0 for x in row[1:]]) > 0:
+                    intentData.addRawOutput(row[1:], self._labelsMap)
+                else:
+                    eprintf('Warning: Empty response at: ' + intent + '\n')
+
 
     def __handleEntityBlock(self, block):
         """ Read entity definition from current block and save it into Dialog data structure. """
@@ -200,7 +205,6 @@ class XLSXHandler(object):
 
     def __handleIntentBlock(self, intent, block, domain):
         """ Read intent definition from current block and save it into Dialog data structure. """
-
         # blockLength = len(block)
         startsWithHash = block[0][0].startswith(u'#')
 

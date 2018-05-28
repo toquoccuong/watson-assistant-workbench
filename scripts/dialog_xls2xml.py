@@ -34,23 +34,23 @@ def saveDialogDataToFileSystem(dialogData, handler, config):
             xmlData = handler.convertDialogData(dialogData, domains[domain])
             dialogFile.write(handler.printXml(xmlData))
 
-    if hasattr(config, 'common_generated_intents') and not os.path.exists(getattr(config, 'common_generated_intents')[0]):
-        os.makedirs(getattr(config, 'common_generated_intents')[0])
-        print('Created new directory ' + getattr(config, 'common_generated_intents')[0])
+    if hasattr(config, 'common_generated_intents') and not os.path.exists(getattr(config, 'common_generated_intents')):
+        os.makedirs(getattr(config, 'common_generated_intents'))
+        print('Created new directory ' + getattr(config, 'common_generated_intents'))
 
     for intent, intentData in dialogData.getAllIntents().iteritems():
         if len(intentData.getIntentAlternatives()) > 0:
-            with open(os.path.join(getattr(config, 'common_generated_intents')[0], intent.decode('utf8') + '.csv'), 'w') as intentFile:
+            with open(os.path.join(getattr(config, 'common_generated_intents'), intent.decode('utf8') + '.csv'), 'w') as intentFile:
                 for alternative in intentData.getIntentAlternatives():
                     intentFile.write(alternative.encode('utf8') + '\n')
 
-    if hasattr(config, 'common_generated_entities') and not os.path.exists(getattr(config, 'common_generated_entities')[0]):
-        os.makedirs(getattr(config, 'common_generated_entities')[0])
-        print('Created new directory ' + getattr(config, 'common_generated_entities')[0])
+    if hasattr(config, 'common_generated_entities') and not os.path.exists(getattr(config, 'common_generated_entities')):
+        os.makedirs(getattr(config, 'common_generated_entities'))
+        print('Created new directory ' + getattr(config, 'common_generated_entities'))
 
     entities = dialogData.getAllEntities()
     for entity in entities:
-        with open(os.path.join(getattr(config, 'common_generated_entities')[0], entity.encode('ascii', 'ignore') + '.csv'), 'w') as entityFile:
+        with open(os.path.join(getattr(config, 'common_generated_entities'), entity.encode('ascii', 'ignore') + '.csv'), 'w') as entityFile:
             for entityList in entities[entity]:
                 entityFile.write(entityList.encode('utf8') + '\n')
 
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     parser.add_argument('-oc', '--common_output_config', help='output configuration file')
     parser.add_argument('-v', '--common_verbose', required=False, help='verbosity', action='store_true')
     args = parser.parse_args(sys.argv[1:])
-    config = Cfg(args);
+    config = Cfg(args)
     VERBOSE = hasattr(config, 'common_verbose')
 
     if hasattr(config, 'common_verbose') and getattr(config, 'common_verbose'):

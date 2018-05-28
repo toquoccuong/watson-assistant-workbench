@@ -81,6 +81,11 @@ if __name__ == '__main__':
     version = getattr(config, 'conversation_version')
     workspacesUrl += '?version=' + version
 
+    # Make sure intents, entities and dialog_nodes fields are present even when empty to make sure the old items get erased.
+    if 'intents' not in workspace: workspace['intents'] = []
+    if 'entities' not in workspace: workspace['entities'] = []
+    if 'dialog_nodes' not in workspace: workspace['dialog_nodes'] = []
+
     # create/update workspace
     response = requests.post(workspacesUrl, auth=(username, password), headers={'Content-Type': 'application/json'}, data=json.dumps(workspace, indent=4))
     responseJson = response.json()
@@ -88,6 +93,8 @@ if __name__ == '__main__':
     # check errors during upload
     if 'error' in responseJson:
         eprintf('Cannot upload conversation workspace\nERROR: %s\n', responseJson['error'])
+        if 'errors' in responseJson and len(responseJson['errors']) > 0:
+            eprintf('\t explanation: %s\n', responseJson['errors'][0])
         if VERBOSE: eprintf("INFO: RESPONSE: %s\n", responseJson)
 #        if VERBOSE: eprintf("INFO: WORKSPACE: %s\n", json.dumps(workspace, indent=4))
         sys.exit(1)
@@ -126,13 +133,14 @@ if __name__ == '__main__':
     # create file with automatic redirect
     if hasattr(config, 'common_outputs_client') and getattr(config, 'common_outputs_client'):
         clientFilePath = os.path.join(getattr(config, 'common_outputs_directory'), getattr(config, 'common_outputs_client'))
-        try:
-            with open(clientFilePath, "w") as clientFile:
-                clientFile.write('<meta http-equiv="refresh" content=\"0; url=' + clientv2URL + '\" />')
-                clientFile.write('<p><a href=\"' + clientv2URL + '\">Redirect</a></p>')
-            clientFile.close()
-        except IOError:
-            eprintf('ERROR: Cannot write to %s\n', clientFilePath)
-            sys.exit(1)
+        if hasattr(config, 'context_client_name'):
+            try:
+                with open(clientFilePath, "w") as clientFile:
+                    clientFile.write('<meta http-equiv="refresh" content=\"0; url=' + clientv2URL + '\" />')
+                    clientFile.write('<p><a href=\"' + clientv2URL + '\">Redirect</a></p>')
+                clientFile.close()
+            except IOError:
+                eprintf('ERROR: Cannot write to %s\n', clientFilePath)
+                sys.exit(1)
 
     print('\nFINISHING: '+ os.path.basename(__file__) + '\n')

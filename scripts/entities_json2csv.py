@@ -14,6 +14,7 @@ limitations under the License.
 """
 
 import json, sys, argparse, os
+import unidecode
 from wawCommons import printf, eprintf, toEntityName
 
 if __name__ == '__main__':
@@ -48,7 +49,7 @@ if __name__ == '__main__':
             # process all entity values
             for valueJSON in entityJSON["values"]:
                 value = []
-                value.append(valueJSON["value"].strip())
+                value.append(unidecode.unidecode(valueJSON["value"].strip()))
                 # add all synonyms
                 if 'synonyms' in valueJSON:
                     for synonym in valueJSON['synonyms']:

@@ -50,7 +50,7 @@ if __name__ == '__main__':
 
     pathList = getattr(config, 'common_entities')
     if hasattr(config, 'common_generated_entities'):
-        pathList = pathList + getattr(config, 'common_generated_entities')
+        pathList = pathList + [getattr(config, 'common_generated_entities')]
 
     filesAtPath = getFilesAtPath(pathList)
     for entityFileName in sorted(filesAtPath):
@@ -87,10 +87,11 @@ if __name__ == '__main__':
                     line = line.strip()
                     if line:
                         rawSynonyms = line.split(';')
-                        # strip and lower all items in line
-                        [x.strip().lower() for x in rawSynonyms]
-                        representativeValue = rawSynonyms[0]
-                        synonyms = sorted(list(set(rawSynonyms[1:])))
+                        representativeValue = rawSynonyms[0].strip() # keep the value as it is to match in conditions
+                        rawSynonyms = [x for x in [x.strip().lower() for x in rawSynonyms] if len(x) > 0] # strip and lower all items in line
+                        synonyms = set(rawSynonyms) # remove duplicities
+                        synonyms.remove(representativeValue.lower()) # remove value from synonyms, so that duplicity with value is not possible
+                        synonyms = sorted(list(synonyms))
                         valueJSON = {}
                         if representativeValue[0] is '~':
                             # all patterns are represented by the first value without first char (~)

@@ -161,8 +161,8 @@ def getNodeWithTheSameCondition(root, testNode):
 def importText(importTree, config):
     imports = importTree.xpath('//importText')
     for imp in imports:
-        if VERBOSE: eprintf('Importing %s\n', os.path.join(os.path.dirname(getattr(config, 'common_dialog_main')),*filename))
         filename = imp.text.split('/') 
+        if VERBOSE: eprintf('Importing %s\n', os.path.join(os.path.dirname(getattr(config, 'common_dialog_main')),*filename))
         fp = io.open(os.path.join(os.path.dirname(getattr(config, 'common_dialog_main')),*filename) ,'r', encoding='utf-8')
         importTxt = fp.read()
         fp.close()
@@ -235,7 +235,7 @@ def findAllNodeNames(tree):
     nodesWithNames = tree.xpath('//node[@name]')
     for nodeWithName in nodesWithNames:
         if nodeWithName.get('name') in names:
-            eprintf('ERROR: Duplicit node name found: %s\n', nodeWithName.get('name'))
+            eprintf('ERROR: Duplicit node name found: "%s"\n', nodeWithName.get('name'))
             exit(1)
         else:
             names.append(nodeWithName.get('name'))
