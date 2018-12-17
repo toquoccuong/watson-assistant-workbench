@@ -31,7 +31,7 @@ if __name__ == '__main__':
     parser.add_argument('-s', '--soft', required=False, help='soft name policy - change intents and entities names without error.', action='store_true', default="")
     parser.add_argument('-v','--common_verbose', required=False, help='verbosity', action='store_true')
     args = parser.parse_args(sys.argv[1:])
-    config = Cfg(args);
+    config = Cfg(args)
 
     VERBOSE = hasattr(config, 'common_verbose')
     NAME_POLICY = 'soft' if args.soft else 'hard'
@@ -63,7 +63,7 @@ if __name__ == '__main__':
                 if line and not line in examples:
                     examples.append(line)
                 elif line in examples:
-                    printf('Example used twice for the intent %s, omitting:%s /n', intentName, line )
+                    printf('Example used twice for the intent %s, omitting:%s \n', intentName, line )
             intent['examples'] = [{'text':i} for i in examples]
             intents.append(intent)
 
