@@ -43,8 +43,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Converts intents files to one file in NLU tsv format', formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     # positional arguments
     parser.add_argument('intentsDir', help='directory with intents files - all of them will be included in output file')
-    parser.add_argument('output', help='file with output intents in NLU data .tsv format')
     # optional arguments
+    parser.add_argument('-o', '--output', help='file with output intents in NLU data .tsv format')
     parser.add_argument('-e', '--entityDir', required=False, help='directory with lists of entities in csv files (file names = entity names), used to tag those entities in output')
     parser.add_argument('-l', '--list', required=False, help='file with list of all intents (if it should be generated)')
     parser.add_argument('-m', '--map', required=False, help='file with domain to intents map (if it should be generated)')
@@ -62,8 +62,25 @@ if __name__ == '__main__':
     if args.entityDir:
         entities = getEntities(args.entityDir, NAME_POLICY)
 
-    with open(args.output, 'w') as outputFile:
-        # process intents
+    if args.output:
+        with open(args.output, 'w') as outputFile:
+            # process intents
+            intentNames = []
+            for intentFileName in os.listdir(args.intentsDir):
+                intentName = toIntentName(NAME_POLICY, args.common_intents_nameCheck, PREFIX, os.path.splitext(intentFileName)[0])
+                if intentName not in intentNames:
+                    intentNames.append(intentName)
+                with open(os.path.join(args.intentsDir, intentFileName), "r") as intentFile:
+                    for line in intentFile.readlines():
+                        # remove comments
+                        line = line.split('#')[0]
+                        if args.entityDir:
+                            line = tagEntities(line, entities)
+                        if line:
+                            outputFile.write("1\t" + intentName + "\t" + line)
+        if VERBOSE: printf("Intents file '%s' was successfully created\n", args.output)
+    else:
+        # adding printing intent examples to console, so we can put intents from multiple folders to one tsv
         intentNames = []
         for intentFileName in os.listdir(args.intentsDir):
             intentName = toIntentName(NAME_POLICY, args.common_intents_nameCheck, PREFIX, os.path.splitext(intentFileName)[0])
@@ -76,8 +93,8 @@ if __name__ == '__main__':
                     if args.entityDir:
                         line = tagEntities(line, entities)
                     if line:
-                        outputFile.write("1\t" + intentName + "\t" + line)
-    if VERBOSE: printf("Intents file '%s' was successfully created\n", args.output)
+                        print("1\t" + intentName + "\t" + line.decode('utf-8').strip())
+        if VERBOSE: printf("Intents were successfully printed\n")
 
     if args.list:
         with open(args.list, 'w') as intentsListFile:
