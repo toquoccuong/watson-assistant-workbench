@@ -77,20 +77,20 @@ def convertNode(nodeJSON):
         else:
             conditionXML.text = nodeJSON['conditions']
     #context
-    if 'context' in nodeJSON and nodeJSON['context']:
+    if 'context' in nodeJSON:
         if nodeJSON['context'] is None: # null value
             contextXML = LET.Element('context')
             nodeXML.append(contextXML)
             contextXML.attrib[XSI+'nil'] = "true"
-        else:
+        elif nodeJSON['context']:
             convertAll(nodeXML, nodeJSON, 'context')
     #output
-    if 'output' in nodeJSON and nodeJSON['output']:
+    if 'output' in nodeJSON:
         if nodeJSON['output'] is None: # null value
             outputXML = LET.Element('output')
             nodeXML.append(outputXML)
             outputXML.attrib[XSI+'nil'] = "true"
-        else:
+        elif nodeJSON['output']:
             convertAll(nodeXML, nodeJSON, 'output')
             if 'text' in nodeJSON['output'] and not isinstance(nodeJSON['output']['text'], basestring):
               outputXML = nodeXML.find('output').find('text').tag = 'textValues'
@@ -109,7 +109,7 @@ def convertNode(nodeJSON):
         nodeXML.append(nodeGoToXML)
         if nodeJSON['next_step'] is None: # null value
             nodeGoToXML.attrib[XSI+'nil'] = "true"
-        else:
+        elif nodeJSON['next_step']:
             if 'behavior' in nodeJSON['next_step']:
                 nodeGoToBehaviorXML = LET.Element('behavior')
                 nodeGoToXML.append(nodeGoToBehaviorXML)
@@ -133,6 +133,44 @@ def convertNode(nodeJSON):
                     nodeGoToSelectorXML.text = nodeJSON['next_step']['selector']
         # cant use this because target != dialog_node
         #convertAll(nodeXML, nodeJSON, 'go_to')
+    #digression
+    if 'digress_in' in nodeJSON:
+        digressInXML = LET.Element('digress_in')
+        nodeXML.append(digressInXML)
+        if nodeJSON['digress_in'] is None: # null value
+            digressInXML.attrib[XSI+'nil'] = "true"
+        else:
+            digressInXML.text = nodeJSON['digress_in']
+    if 'digress_out' in nodeJSON:
+        digressOutXML = LET.Element('digress_out')
+        nodeXML.append(digressOutXML)
+        if nodeJSON['digress_out'] is None: # null value
+            digressOutXML.attrib[XSI+'nil'] = "true"
+        else:
+            digressOutXML.text = nodeJSON['digress_out']
+    if 'digress_out_slots' in nodeJSON:
+        digressOutSlotsXML = LET.Element('digress_out_slots')
+        nodeXML.append(digressOutSlotsXML)
+        if nodeJSON['digress_out_slots'] is None: # null value
+            digressOutSlotsXML.attrib[XSI+'nil'] = "true"
+        else:
+            digressOutSlotsXML.text = nodeJSON['digress_out_slots']
+    #metadata
+    if 'metadata' in nodeJSON:
+        metadataXML = LET.Element('metadata')
+        nodeXML.append(metadataXML)
+        if nodeJSON['metadata'] is None: # null value
+            metadataXML.attrib[XSI+'nil'] = "true"
+        elif not nodeJSON['metadata']:
+            if isinstance(nodeJSON['metadata'], dict):
+                metadataXML.attrib['structure'] = "emptyDict"
+            elif isinstance(nodeJSON['metadata'], list):
+                metadataXML.attrib['structure'] = "emptyList"
+            else:
+                metadataXML.text = ""
+        else:
+            convertAll(nodeXML, nodeJSON, 'metadata')
+    #actions
     if 'actions' in nodeJSON and nodeJSON['actions']:
       convertAll(nodeXML, nodeJSON, 'actions')
       actionsXML = LET.Element('actions')
@@ -163,7 +201,7 @@ def convertAll(upperNodeXML, nodeJSON, keyJSON, nameXML = None):
         if len(nodeJSON[keyJSON]) == 0:
             nodeXML = LET.Element(str(nameXML))
             upperNodeXML.append(nodeXML)
-            nodeXML.attrib['structure'] = "emptyArray"
+            nodeXML.attrib['structure'] = "emptyList"
         else:
             if upperNodeXML.tag != "output" and upperNodeXML.tag != "context":
                 upperNodeXML.attrib['structure'] = "listItem"
