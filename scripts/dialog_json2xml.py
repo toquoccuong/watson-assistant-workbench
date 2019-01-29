@@ -102,8 +102,8 @@ def convertNode(nodeJSON):
                     nodeXML.find('output').find('generic').attrib['structure'] = 'listItem'
                 # generic is not none or empty
                 for genericItemXML in nodeXML.find('output').findall('generic'):
-                    if not 'response_type' in genericItemXML:
-                        eprintf("ERROR: 'response_type' is missing in the output of the node " + nodeJSON['dialog_node'])
+                    if genericItemXML.find('response_type') is None:
+                        eprintf("ERROR: 'response_type' is missing in the output of the node " + nodeJSON['dialog_node'] + "\n")
                     elif genericItemXML.find('response_type').text == 'text': # TODO check other response_types
                         if genericItemXML.findall('values') is not None:
                             if len(genericItemXML.findall('values')) == 1:
