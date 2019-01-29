@@ -83,6 +83,16 @@ def convertNode(nodeJSON):
             nodeXML.append(contextXML)
             contextXML.attrib[XSI+'nil'] = "true"
         elif nodeJSON['context']:
+        # elif not nodeJSON['context']:
+        #     contextXML = LET.Element('context')
+        #     nodeXML.append(contextXML)
+        #     if isinstance(nodeJSON['context'], dict):
+        #         contextXML.attrib['structure'] = "emptyDict"
+        #     elif isinstance(nodeJSON['context'], list):
+        #         contextXML.attrib['structure'] = "emptyList"
+        #     else:
+        #         contextXML.text = ""
+        # else:
             convertAll(nodeXML, nodeJSON, 'context')
     #output
     if 'output' in nodeJSON:
@@ -164,11 +174,13 @@ def convertNode(nodeJSON):
             digressOutSlotsXML.text = nodeJSON['digress_out_slots']
     #metadata
     if 'metadata' in nodeJSON:
-        metadataXML = LET.Element('metadata')
-        nodeXML.append(metadataXML)
         if nodeJSON['metadata'] is None: # null value
+            metadataXML = LET.Element('metadata')
+            nodeXML.append(metadataXML)
             metadataXML.attrib[XSI+'nil'] = "true"
         elif not nodeJSON['metadata']:
+            metadataXML = LET.Element('metadata')
+            nodeXML.append(metadataXML)
             if isinstance(nodeJSON['metadata'], dict):
                 metadataXML.attrib['structure'] = "emptyDict"
             elif isinstance(nodeJSON['metadata'], list):
@@ -179,15 +191,23 @@ def convertNode(nodeJSON):
             convertAll(nodeXML, nodeJSON, 'metadata')
     #actions
     if 'actions' in nodeJSON and nodeJSON['actions']:
-      convertAll(nodeXML, nodeJSON, 'actions')
-      actionsXML = LET.Element('actions')
-      for actionXML in nodeXML.findall('actions'):
-        actionXML.tag = 'action'
-        actionsXML.append(actionXML)
-      nodeXML.append(actionsXML)
+        if nodeJSON['actions'] is None: # null value
+            actionsXML = LET.Element('actions')
+            nodeXML.append(actionsXML)
+            actionsXML.attrib[XSI+'nil'] = "true"
+        elif nodeJSON['actions']:
+            convertAll(nodeXML, nodeJSON, 'actions')
+            # action -> actions - action
+            actionsXML = LET.Element('actions')
+            for actionXML in nodeXML.findall('actions'):
+                actionXML.tag = 'action'
+                actionsXML.append(actionXML)
+            nodeXML.append(actionsXML)
+
     #TODO handlers
     #TODO slots
     #TODO responses
+
     return nodeXML
 
 # upperNodeXML: where to append this tag
@@ -210,7 +230,7 @@ def convertAll(upperNodeXML, nodeJSON, keyJSON, nameXML = None):
             upperNodeXML.append(nodeXML)
             nodeXML.attrib['structure'] = "emptyList"
         else:
-            if upperNodeXML.tag != "output" and upperNodeXML.tag != "context":
+            if upperNodeXML.tag != "output" and upperNodeXML.tag != "context" and upperNodeXML.tag != "node":
                 upperNodeXML.attrib['structure'] = "listItem"
             for i in range(len(nodeJSON[keyJSON])):
                 listItemJSON = nodeJSON[keyJSON][i]

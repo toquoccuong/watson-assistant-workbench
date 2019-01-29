@@ -619,7 +619,10 @@ def printNodes(root, parent, dialogJSON):
             nodeJSON['type'] = 'response_condition'
         # CONDITION
         if nodeXML.find('condition') is not None:
-            nodeJSON['conditions'] = nodeXML.find('condition').text
+            if nodeXML.find('condition').text is not None:
+                nodeJSON['conditions'] = nodeXML.find('condition').text
+            else:
+                nodeJSON['conditions'] = ""
         elif 'type' in nodeJSON:
             if nodeJSON['type'] == 'default':
                 nodeJSON['conditions'] = DEFAULT_CONDITION_ELSE
