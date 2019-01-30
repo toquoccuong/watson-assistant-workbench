@@ -596,6 +596,8 @@ def printNodes(root, parent, dialogJSON):
             validateNodeName(nodeXML)
         nodeJSON = {'dialog_node':nodeXML.find('name').text}
         dialogJSON.append(nodeJSON)
+#        print("name " + nodeXML.find('name').text)
+
 
         children = []
 
@@ -630,8 +632,6 @@ def printNodes(root, parent, dialogJSON):
                 nodeJSON['conditions'] = DEFAULT_CONDITION_YES
             elif nodeJSON['type'] == 'no':
                 nodeJSON['conditions'] = DEFAULT_CONDITION_NO
-            elif nodeJSON['type'] == 'slot' or nodeJSON['type'] == 'response_condition' or nodeJSON['type'] == 'event_handler':
-                None
             else:
                 nodeJSON['conditions'] = DEFAULT_CONDITION_ELSE
         else:
@@ -653,10 +653,15 @@ def printNodes(root, parent, dialogJSON):
             if outputNodeXML.find('textValues') is not None: #rename textValues element to text
                 outputNodeTextXML = outputNodeXML.find('textValues')
                 outputNodeTextXML.tag = 'text'
-            if len(outputNodeXML.getchildren()) == 0: # remove empy output ("output": Null cannot be uploaded to WA)
-                nodeXML.remove(outputNodeXML)
-            else:
-                convertAll(nodeJSON, outputNodeXML)
+                if outputNodeTextXML.get('structure') is not None:
+                    for outputNodeTextValueXML in outputNodeTextXML.find('values'):
+                        outputNodeTextValueXML.attrib['structure'] = outputNodeTextXML.get('structure')
+                    outputNodeTextXML.attrib.pop('structure')
+
+            #if len(outputNodeXML.getchildren()) == 0: # remove empy output ("output": Null cannot be uploaded to WA)
+            #    nodeXML.remove(outputNodeXML)
+            #else:
+            convertAll(nodeJSON, outputNodeXML)
         # CONTEXT
         if nodeXML.find('context') is not None:
             convertAll(nodeJSON, nodeXML.find('context'))
@@ -695,6 +700,10 @@ def printNodes(root, parent, dialogJSON):
         if nodeXML.find('digress_out_slots') is not None:
             nodeJSON['digress_out_slots'] = nodeXML.find('digress_out_slots').text
 
+        # TYPE DEFAULT
+        if not 'type' in nodeJSON:
+            nodeJSON['type'] = "standard"
+
         # CLOSE NODE
         previousSibling = nodeXML
 
@@ -727,18 +736,39 @@ def convertAll(upperNodeJson, nodeXml):
         nodeXml (Element): Parsed XML representation to be translated
     """
     key = nodeXml.tag #key is index/selector to upperNodeJson, it is either name (e.g. generic)
+#    print("tag " + nodeXml.tag)
     if type(upperNodeJson) is list:  # or an index of the last element of the array
         key = len(upperNodeJson) - 1
+#    print("key " + str(key))
+#    print("text: " + str(nodeXml.text))
+    if nodeXml.get(XSI+'nil') is not None:
+        if nodeXml.get(XSI+'nil') in ["True", "true"]:
+#            print(" it is None")
+            upperNodeJson[key] = None
+            return
+        elif nodeXml.text in ["False", "false"]:
+            pass
+        else:
+            eprintf("ERROR: Unable to parse boolean " + nodeXml.get(XSI+'nil') + "\n")
 
     if not list(nodeXml): # it has no children (subtags) - it is a terminal
+#        print(" is terminal")
         if nodeXml.get('structure') is not None:
+#            print(" has structure defined")
             if nodeXml.get('structure') == 'emptyList':
+#                print(" is emptyList")
                 upperNodeJson[key] = []
+                return
             elif nodeXml.get('structure') == 'emptyDict':
+#                print(" is emptyDict")
                 upperNodeJson[key] = {}
-        elif nodeXml.text is None:
-            upperNodeJson[key] = None
-        elif nodeXml.text:  # if a single element with text - terminal (string, number or none)
+                return
+#        if nodeXml.text is None:
+#            print(" its text is None")
+#            upperNodeJson[key] = None
+# text cannot be none, just empty
+        if nodeXml.text:  # if a single element with text - terminal (string, number or none)
+#            print(" has text")
             if nodeXml.get('type') is not None and nodeXml.get('type') == 'number':
                     try:
                         upperNodeJson[key] = int(nodeXml.text)
@@ -756,10 +786,14 @@ def convertAll(upperNodeJson, nodeXml):
                         upperNodeJson[key] = nodeXml.text
                         eprintf("ERROR: Unable to parse boolean " + nodeXml.text + "\n")
             else:
+#                print(" of type text")
                 upperNodeJson[key] = unescape(nodeXml.text.strip())
+#                print(" added " + unescape(nodeXml.text.strip()) + " to [" + str(key) + "]")
+
         else:
             upperNodeJson[key] = '' # empty string
     else: # it has subtags
+#        print(" has subtags")
         #if there is an array of subelements within elemnt - separate elements of each tag value to a separate nodeNameMap field
         upperNodeJson[key] = {}
 
@@ -777,9 +811,12 @@ def convertAll(upperNodeJson, nodeXml):
             #if len(nodeNameMap[name]) == 1 and nodeNameMap[name][0].get('structure') != 'listItem' and name!='values':
             if len(nodeNameMap[name]) == 1 and nodeNameMap[name][0].get('structure') != 'listItem' :
                 convertAll(upperNodeJson[key], nodeNameMap[name][0])
+#                print(" subnode " + name + " is tag")
             else:
                 upperNodeJson[key][name] = []
+#                print(" subnode " + name + " is list")
                 for element in nodeNameMap[name]:
+#                    print(" adding to [" + str(key) + "][" + name + "] element " + str(element))
                     upperNodeJson[key][name].append(None)  # just to get index
                     convertAll(upperNodeJson[key][name], element)
 
@@ -803,6 +840,11 @@ if __name__ == '__main__':
     args = parser.parse_args(sys.argv[1:])
     config = Cfg(args)
     VERBOSE = hasattr(config, 'common_verbose')
+
+    # XML namespaces
+    XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
+    XSI = "{%s}" % XSI_NAMESPACE
+    NSMAP = {"xsi" : XSI_NAMESPACE}
 
     if hasattr(config, 'cloudfunctions_namespace') and hasattr(config, 'cloudfunctions_package'):
         setattr(config, 'cloudfunctions_path_to_actions', '/' + '/'.join([getattr(config, 'cloudfunctions_namespace').strip("/"), getattr(config, 'cloudfunctions_package').strip("/")]).strip("/") + '/')

@@ -63,11 +63,16 @@ def convertNode(nodeJSON):
     if 'title' in nodeJSON:
         if nodeJSON['title'] != nodeJSON['dialog_node']: # WA adds title to all uploaded workspaces equal to dialog_name, this is cleanup TODO: remove the conditions when upgrading to new version of WA API
             nodeXML.attrib['title'] = nodeJSON['title']
-    #folder
-    if 'type' in nodeJSON and nodeJSON['type'] == 'folder':
+    #type
+    if 'type' in nodeJSON:
         typeNodeXML = LET.Element('type')
-        typeNodeXML.text = 'folder'
+        typeNodeXML.text = nodeJSON['type']
         nodeXML.append(typeNodeXML)
+    #disabled
+#    if 'disabled' in nodeJSON:
+#        disabledNodeXML = LET.Element('disabled')
+#        disabledNodeXML.text = nodeJSON['disabled']
+#        nodeXML.append(disabledNodeXML)
     #condition
     if 'conditions' in nodeJSON:
         conditionXML = LET.Element('condition')
@@ -100,7 +105,16 @@ def convertNode(nodeJSON):
             outputXML = LET.Element('output')
             nodeXML.append(outputXML)
             outputXML.attrib[XSI+'nil'] = "true"
-        elif nodeJSON['output']:
+        elif not nodeJSON['output']:
+            outputXML = LET.Element('output')
+            nodeXML.append(outputXML)
+            if isinstance(nodeJSON['output'], dict):
+                outputXML.attrib['structure'] = "emptyDict"
+            elif isinstance(nodeJSON['output'], list):
+                outputXML.attrib['structure'] = "emptyList"
+            else:
+                outputXML.text = ""
+        else:
             convertAll(nodeXML, nodeJSON, 'output')
             if 'text' in nodeJSON['output'] and not isinstance(nodeJSON['output']['text'], basestring):
               outputXML = nodeXML.find('output').find('text').tag = 'textValues'
