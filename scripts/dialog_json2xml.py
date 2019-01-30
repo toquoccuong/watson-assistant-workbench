@@ -69,10 +69,11 @@ def convertNode(nodeJSON):
         typeNodeXML.text = nodeJSON['type']
         nodeXML.append(typeNodeXML)
     #disabled
-#    if 'disabled' in nodeJSON:
-#        disabledNodeXML = LET.Element('disabled')
-#        disabledNodeXML.text = nodeJSON['disabled']
-#        nodeXML.append(disabledNodeXML)
+    if 'disabled' in nodeJSON:
+        disabledNodeXML = LET.Element('disabled')
+        nodeXML.append(disabledNodeXML)
+        disabledNodeXML.text = str(nodeJSON['disabled'])
+        #disabledNodeXML.attrib['type'] = "boolean"
     #condition
     if 'conditions' in nodeJSON:
         conditionXML = LET.Element('condition')
@@ -219,6 +220,14 @@ def convertNode(nodeJSON):
             nodeXML.append(actionsXML)
 
     #TODO handlers
+    #events
+    if 'event_name' in nodeJSON:
+        eventXML = LET.Element('event_name')
+        nodeXML.append(eventXML)
+        if nodeJSON['event_name'] is None: # null value
+            eventXML.attrib[XSI+'nil'] = "true"
+        else:
+            eventXML.text = nodeJSON['event_name']
     #TODO slots
     #TODO responses
 

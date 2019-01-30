@@ -609,10 +609,21 @@ def printNodes(root, parent, dialogJSON):
             nodeJSON['type'] = nodeXML.find('type').text
         elif nodeXML.find('slots') is not None:
             nodeJSON['type'] = "frame"
+        # disabled
+        if nodeXML.find('disabled') is not None:
+            if nodeXML.find('disabled').text in ["True", "true"]:
+                nodeJSON['disabled'] = True
+            elif nodeXML.find('disabled').text in ["False", "false"]:
+                nodeJSON['disabled'] = False
+            else:
+                nodeJSON['disabled'] = nodeXML.find('disabled').text
+                eprintf("ERROR: Unable to parse boolean " + nodeXML.find('disabled').text + "\n")
         # EVENTNAME
         if nodeXML.get('eventName') is not None:
             nodeJSON['event_name'] = nodeXML.get('eventName')
             nodeJSON['type'] = 'event_handler'
+        if nodeXML.find('event_name') is not None:
+            nodeJSON['event_name'] = nodeXML.find('event_name').text
         # VARIABLE
         if nodeXML.get('variable') is not None:
             nodeJSON['variable'] = nodeXML.get('variable')
@@ -632,8 +643,8 @@ def printNodes(root, parent, dialogJSON):
                 nodeJSON['conditions'] = DEFAULT_CONDITION_YES
             elif nodeJSON['type'] == 'no':
                 nodeJSON['conditions'] = DEFAULT_CONDITION_NO
-            else:
-                nodeJSON['conditions'] = DEFAULT_CONDITION_ELSE
+#            else:
+#                nodeJSON['conditions'] = DEFAULT_CONDITION_ELSE
         else:
             nodeJSON['conditions'] = DEFAULT_CONDITION_ELSE
         # OUTPUT
