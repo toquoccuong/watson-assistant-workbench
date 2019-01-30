@@ -781,21 +781,21 @@ def convertAll(upperNodeJson, nodeXml):
         if nodeXml.text:  # if a single element with text - terminal (string, number or none)
 #            print(" has text")
             if nodeXml.get('type') is not None and nodeXml.get('type') == 'number':
+                try:
+                    upperNodeJson[key] = int(nodeXml.text)
+                except ValueError:
                     try:
-                        upperNodeJson[key] = int(nodeXml.text)
+                        upperNodeJson[key] = float(nodeXml.text)
                     except ValueError:
-                        try:
-                            upperNodeJson[key] = float(nodeXml.text)
-                        except ValueError:
-                            eprintf("ERROR: Unable to parse number " + nodeXml.text)
-            if nodeXml.get('type') is not None and nodeXml.get('type') == 'boolean':
-                    if nodeXml.text in ["True", "true"]:
-                        upperNodeJson[key] = True
-                    elif nodeXml.text in ["False", "false"]:
-                        upperNodeJson[key] = False
-                    else:
-                        upperNodeJson[key] = nodeXml.text
-                        eprintf("ERROR: Unable to parse boolean " + nodeXml.text + "\n")
+                        eprintf("ERROR: Unable to parse number " + nodeXml.text)
+            elif nodeXml.get('type') is not None and nodeXml.get('type') == 'boolean':
+                if nodeXml.text in ["True", "true"]:
+                    upperNodeJson[key] = True
+                elif nodeXml.text in ["False", "false"]:
+                    upperNodeJson[key] = False
+                else:
+                    upperNodeJson[key] = nodeXml.text
+                    eprintf("ERROR: Unable to parse boolean " + nodeXml.text + "\n")
             else:
 #                print(" of type text")
                 upperNodeJson[key] = unescape(nodeXml.text.strip())
