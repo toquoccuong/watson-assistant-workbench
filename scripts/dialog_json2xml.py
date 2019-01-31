@@ -128,7 +128,7 @@ def convertNode(nodeJSON):
                 # generic is not none or empty
                 for genericItemXML in nodeXML.find('output').findall('generic'):
                     if genericItemXML.find('response_type') is None:
-                        eprintf("ERROR: 'response_type' is missing in the output of the node " + nodeJSON['dialog_node'] + "\n")
+                        eprintf("WARNING: 'response_type' is missing in the output of the node " + nodeJSON['dialog_node'] + "\n")
                     elif genericItemXML.find('response_type').text == 'text': # TODO check other response_types
                         if genericItemXML.findall('values') is not None:
                             if len(genericItemXML.findall('values')) == 1:
