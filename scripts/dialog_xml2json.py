@@ -774,6 +774,12 @@ def convertAll(upperNodeJson, nodeXml):
 #                print(" is emptyDict")
                 upperNodeJson[key] = {}
                 return
+            elif nodeXml.get('structure') == 'listItem' and nodeXml.text:
+#                print(" is listItem")
+                upperNodeJson[key] = []
+                if nodeXml.text:
+                    upperNodeJson[key].append(nodeXml.text)
+                return
 #        if nodeXml.text is None:
 #            print(" its text is None")
 #            upperNodeJson[key] = None
