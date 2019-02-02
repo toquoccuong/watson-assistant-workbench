@@ -59,6 +59,8 @@ def expandNode(dialogNodesJSON, upperNodeXML, nodeJSON):
 def convertNode(nodeJSON):
     nodeXML = LET.Element('node')
     nodeXML.attrib['name'] = nodeJSON['dialog_node']
+    print("node " + nodeXML.attrib['name'])
+
     #title
     if 'title' in nodeJSON:
         if nodeJSON['title'] != nodeJSON['dialog_node']: # WA adds title to all uploaded workspaces equal to dialog_name, this is cleanup TODO: remove the conditions when upgrading to new version of WA API
@@ -88,17 +90,16 @@ def convertNode(nodeJSON):
             contextXML = LET.Element('context')
             nodeXML.append(contextXML)
             contextXML.attrib[XSI+'nil'] = "true"
-        elif nodeJSON['context']:
-        # elif not nodeJSON['context']:
-        #     contextXML = LET.Element('context')
-        #     nodeXML.append(contextXML)
-        #     if isinstance(nodeJSON['context'], dict):
-        #         contextXML.attrib['structure'] = "emptyDict"
-        #     elif isinstance(nodeJSON['context'], list):
-        #         contextXML.attrib['structure'] = "emptyList"
-        #     else:
-        #         contextXML.text = ""
-        # else:
+        elif not nodeJSON['context']:
+             contextXML = LET.Element('context')
+             nodeXML.append(contextXML)
+             if isinstance(nodeJSON['context'], dict):
+                 contextXML.attrib['structure'] = "emptyDict"
+             elif isinstance(nodeJSON['context'], list):
+                 contextXML.attrib['structure'] = "emptyList"
+             else:
+                 contextXML.text = ""
+        else:
             convertAll(nodeXML, nodeJSON, 'context')
     #output
     if 'output' in nodeJSON:
@@ -116,15 +117,18 @@ def convertNode(nodeJSON):
             else:
                 outputXML.text = ""
         else:
+            print("convert all output")
             convertAll(nodeXML, nodeJSON, 'output')
             if 'text' in nodeJSON['output'] and not isinstance(nodeJSON['output']['text'], basestring):
               outputXML = nodeXML.find('output').find('text').tag = 'textValues'
             if 'generic' in nodeJSON['output']:
                 if nodeJSON['output']['generic'] is None or len(nodeXML.find('output').findall('generic')) == 0:
                     return
-                if len(nodeXML.find('output').findall('generic')) == 1:
-                     # generic nodes has to be of type array
+                if len(nodeXML.find('output').findall('generic')) == 1 and nodeXML.find('output').find('generic').attrib['structure'] is None:
+                     # generic nodes has to be of type array - set if not defined
                     nodeXML.find('output').find('generic').attrib['structure'] = 'listItem'
+                    print("setting listitem to generic")
+
                 # generic is not none or empty
                 for genericItemXML in nodeXML.find('output').findall('generic'):
                     if genericItemXML.find('response_type') is None:
@@ -135,6 +139,8 @@ def convertNode(nodeJSON):
                                 if not 'structure' in genericItemXML.find('values').attrib: # structure is not specified yet
                                     # values has to be of type array
                                     genericItemXML.find('values').attrib['structure'] = 'listItem'
+                                    print("setting listitem to values")
+
     #goto
     if 'next_step' in nodeJSON:
         nodeGoToXML = LET.Element('goto')
@@ -238,47 +244,83 @@ def convertNode(nodeJSON):
 # keyJSON: name of tag to convert
 def convertAll(upperNodeXML, nodeJSON, keyJSON, nameXML = None):
 
+    structure = None
     if nameXML is None:
         nameXML = keyJSON
+    else:
+        structure = "listItem"
+        print(" structure listitem")
+    print("name " + nameXML)
 
     # None
     if nodeJSON[keyJSON] is None:
         nodeXML = LET.Element(str(nameXML))
         upperNodeXML.append(nodeXML)
+        if structure is not None and nameXML != "action" and nameXML != "actions":
+            nodeXML.attrib['structure'] = "listItem"
+            print(" add structure listitem")
         nodeXML.attrib[XSI+'nil'] = "true"
+        print("is none")
     # list
     elif isinstance(nodeJSON[keyJSON], list):
+        print("is list")
         if len(nodeJSON[keyJSON]) == 0:
             nodeXML = LET.Element(str(nameXML))
             upperNodeXML.append(nodeXML)
             nodeXML.attrib['structure'] = "emptyList"
+            print("isemptylist")
+            print("set emptylist to " + nodeXML.tag)
+
         else:
             if upperNodeXML.tag != "output" and upperNodeXML.tag != "context" and upperNodeXML.tag != "node":
-                upperNodeXML.attrib['structure'] = "listItem"
+                pass
+#                upperNodeXML.attrib['structure'] = "listItem"
+#                print("setting listitem")
             for i in range(len(nodeJSON[keyJSON])):
                 listItemJSON = nodeJSON[keyJSON][i]
                 convertAll(upperNodeXML, nodeJSON[keyJSON], i, keyJSON)
     # dict
     elif isinstance(nodeJSON[keyJSON], dict):
-        nodeXML = LET.Element(str(nameXML))
-        upperNodeXML.append(nodeXML)
-        for subKeyJSON in nodeJSON[keyJSON]:
-            convertAll(nodeXML, nodeJSON[keyJSON], subKeyJSON)
+        print("is dict")
+        if not nodeJSON[keyJSON]: #empty dict
+            nodeXML = LET.Element(str(nameXML))
+            upperNodeXML.append(nodeXML)
+            nodeXML.attrib['structure'] = "emptyDict"
+            print("isemptydict")
+            print("set emptydict to " + nodeXML.tag)
+        else:
+            nodeXML = LET.Element(str(nameXML))
+            upperNodeXML.append(nodeXML)
+            if structure is not None and nameXML != "action" and nameXML != "actions":
+                nodeXML.attrib['structure'] = "listItem"
+                print(" add structure listitem for " + nameXML)
+            for subKeyJSON in nodeJSON[keyJSON]:
+                convertAll(nodeXML, nodeJSON[keyJSON], subKeyJSON)
     # string
     elif isinstance(nodeJSON[keyJSON], basestring):
+        print("is string")
         nodeXML = LET.Element(str(nameXML))
         upperNodeXML.append(nodeXML)
+        if structure is not None and nameXML != "action" and nameXML != "actions":
+            nodeXML.attrib['structure'] = "listItem"
+            print(" add structure listitem")
         nodeXML.text = nodeJSON[keyJSON]
     # bool
     elif isinstance(nodeJSON[keyJSON], bool):
         nodeXML = LET.Element(str(nameXML))
         upperNodeXML.append(nodeXML)
+        if structure is not None and nameXML != "action" and nameXML != "actions":
+            nodeXML.attrib['structure'] = "listItem"
+            print(" add structure listitem")
         nodeXML.text = str(nodeJSON[keyJSON])
         nodeXML.attrib['type'] = "boolean"
     # int, long, float, complex
     elif isNumber(nodeJSON[keyJSON]):
         nodeXML = LET.Element(str(nameXML))
         upperNodeXML.append(nodeXML)
+        if structure is not None and nameXML != "action" and nameXML != "actions":
+            nodeXML.attrib['structure'] = "listItem"
+            print(" add structure listitem")
         nodeXML.text = str(nodeJSON[keyJSON])
         nodeXML.attrib['type'] = "number"
     else:

@@ -596,7 +596,7 @@ def printNodes(root, parent, dialogJSON):
             validateNodeName(nodeXML)
         nodeJSON = {'dialog_node':nodeXML.find('name').text}
         dialogJSON.append(nodeJSON)
-#        print("name " + nodeXML.find('name').text)
+        print("===============================\nname " + nodeXML.find('name').text)
 
 
         children = []
@@ -661,13 +661,21 @@ def printNodes(root, parent, dialogJSON):
                     outputNodeXML.append(outputNodeTextXML)
                     # TODO save againMessage
                 outputNodeXML.text = None
-            if outputNodeXML.find('textValues') is not None: #rename textValues element to text
+            if outputNodeXML.find('textValues') is not None:
                 outputNodeTextXML = outputNodeXML.find('textValues')
-                outputNodeTextXML.tag = 'text'
                 if outputNodeTextXML.get('structure') is not None:
-                    for outputNodeTextValueXML in outputNodeTextXML.find('values'):
+                    print(" structure defined")
+                    for outputNodeTextValueXML in outputNodeTextXML.getchildren():
+                        print("subnode " + outputNodeTextValueXML.tag)
+#                    for outputNodeTextValueXML in outputNodeTextXML.find('values'):
+                    for outputNodeTextValueXML in outputNodeTextXML.findall('values'):
+                        print("subnode values found")
                         outputNodeTextValueXML.attrib['structure'] = outputNodeTextXML.get('structure')
+                        print("adding attribute " + outputNodeTextValueXML.attrib['structure'])
                     outputNodeTextXML.attrib.pop('structure')
+                #rename textValues element to text
+                outputNodeTextXML.tag = 'text'
+                print("textValues renamed to text")
 
             #if len(outputNodeXML.getchildren()) == 0: # remove empy output ("output": Null cannot be uploaded to WA)
             #    nodeXML.remove(outputNodeXML)
@@ -747,14 +755,14 @@ def convertAll(upperNodeJson, nodeXml):
         nodeXml (Element): Parsed XML representation to be translated
     """
     key = nodeXml.tag #key is index/selector to upperNodeJson, it is either name (e.g. generic)
-#    print("tag " + nodeXml.tag)
+    print("tag " + nodeXml.tag)
     if type(upperNodeJson) is list:  # or an index of the last element of the array
         key = len(upperNodeJson) - 1
-#    print("key " + str(key))
+    print("key " + str(key))
 #    print("text: " + str(nodeXml.text))
     if nodeXml.get(XSI+'nil') is not None:
         if nodeXml.get(XSI+'nil') in ["True", "true"]:
-#            print(" it is None")
+            print(" it is None")
             upperNodeJson[key] = None
             return
         elif nodeXml.text in ["False", "false"]:
@@ -763,9 +771,10 @@ def convertAll(upperNodeJson, nodeXml):
             eprintf("ERROR: Unable to parse boolean " + nodeXml.get(XSI+'nil') + "\n")
 
     if not list(nodeXml): # it has no children (subtags) - it is a terminal
-#        print(" is terminal")
+        print(" is terminal")
+        print(" structure " + str(nodeXml.get('structure')))
         if nodeXml.get('structure') is not None:
-#            print(" has structure defined")
+            print(" has structure defined")
             if nodeXml.get('structure') == 'emptyList':
 #                print(" is emptyList")
                 upperNodeJson[key] = []
@@ -774,18 +783,18 @@ def convertAll(upperNodeJson, nodeXml):
 #                print(" is emptyDict")
                 upperNodeJson[key] = {}
                 return
-            elif nodeXml.get('structure') == 'listItem' and nodeXml.text:
+#            elif nodeXml.get('structure') == 'listItem' and nodeXml.text:
 #                print(" is listItem")
-                upperNodeJson[key] = []
-                if nodeXml.text:
-                    upperNodeJson[key].append(nodeXml.text)
-                return
+#                upperNodeJson[key] = []
+#                if nodeXml.text:
+#                    upperNodeJson[key].append(nodeXml.text)
+#                return
 #        if nodeXml.text is None:
 #            print(" its text is None")
 #            upperNodeJson[key] = None
 # text cannot be none, just empty
         if nodeXml.text:  # if a single element with text - terminal (string, number or none)
-#            print(" has text")
+            print(" has text")
             if nodeXml.get('type') is not None and nodeXml.get('type') == 'number':
                 try:
                     upperNodeJson[key] = int(nodeXml.text)
@@ -803,14 +812,14 @@ def convertAll(upperNodeJson, nodeXml):
                     upperNodeJson[key] = nodeXml.text
                     eprintf("ERROR: Unable to parse boolean " + nodeXml.text + "\n")
             else:
-#                print(" of type text")
+                print(" of type text")
                 upperNodeJson[key] = unescape(nodeXml.text.strip())
-#                print(" added " + unescape(nodeXml.text.strip()) + " to [" + str(key) + "]")
+                print(" added " + unescape(nodeXml.text.strip()) + " to [" + str(key) + "]")
 
         else:
             upperNodeJson[key] = '' # empty string
     else: # it has subtags
-#        print(" has subtags")
+        print(" has subtags")
         #if there is an array of subelements within elemnt - separate elements of each tag value to a separate nodeNameMap field
         upperNodeJson[key] = {}
 
@@ -828,12 +837,12 @@ def convertAll(upperNodeJson, nodeXml):
             #if len(nodeNameMap[name]) == 1 and nodeNameMap[name][0].get('structure') != 'listItem' and name!='values':
             if len(nodeNameMap[name]) == 1 and nodeNameMap[name][0].get('structure') != 'listItem' :
                 convertAll(upperNodeJson[key], nodeNameMap[name][0])
-#                print(" subnode " + name + " is tag")
+                print(" subnode " + name + " is tag")
             else:
                 upperNodeJson[key][name] = []
-#                print(" subnode " + name + " is list")
+                print(" subnode " + name + " is list")
                 for element in nodeNameMap[name]:
-#                    print(" adding to [" + str(key) + "][" + name + "] element " + str(element))
+                    print(" adding to [" + str(key) + "][" + name + "] element " + str(element))
                     upperNodeJson[key][name].append(None)  # just to get index
                     convertAll(upperNodeJson[key][name], element)
 
