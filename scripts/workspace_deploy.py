@@ -15,6 +15,7 @@ limitations under the License.
 from __future__ import print_function
 
 import os, json, sys, argparse, requests, configparser
+from watson_developer_cloud import AssistantV1
 from wawCommons import printf, eprintf
 from cfgCommons import Cfg
 import datetime
@@ -36,6 +37,7 @@ if __name__ == '__main__':
     parser.add_argument('-cv','--conversation_version', required=False, help='version of the conversation service API')
     parser.add_argument('-cn','--conversation_username', required=False, help='username of the conversation service instance')
     parser.add_argument('-cp','--conversation_password', required=False, help='password of the conversation service instance')
+    parser.add_argument('-ca','--conversation_apikey', required=False, help='apikey of the conversation service instance')
     parser.add_argument('-cid','--conversation_workspace_id', required=False, help='workspace_id of the application. If a workspace id is provided, previous workspace content is overwritten, otherwise a new workspace is created ')
     parser.add_argument('-wn','--conversation_workspace_name', required=False, help='name of the workspace')
     parser.add_argument('-v','--common_verbose', required=False, help='verbosity', action='store_true')
@@ -62,35 +64,78 @@ if __name__ == '__main__':
     else:
         print('WARNING: conversation_workspace_name parameter not defined')
 
-    # credentials
-    if not hasattr(config, 'conversation_username') or not getattr(config, 'conversation_username'):
-        print('ERROR: con_username parameter not defined.')
-        exit(1)
-    username = getattr(config, 'conversation_username')
-    if not hasattr(config, 'conversation_password') or not getattr(config, 'conversation_password'):
-        print('ERROR: con_password parameter not defined.')
-        exit(1)
-    password = getattr(config, 'conversation_password')
-
+    # url
     if not hasattr(config, 'conversation_url') or not getattr(config, 'conversation_url'):
-        print('ERROR: con_url parameter not defined.')
+        print("ERROR: 'conversation_url' parameter not defined.")
         exit(1)
     workspacesUrl = getattr(config, 'conversation_url')
-    if not hasattr(config, 'conversation_workspace_id') or not getattr(config, 'conversation_workspace_id'):
-        print('INFO: converstion_workspace_id parameter not defined, creating new workspace')
-    else:
-        workspacesUrl += '/' + getattr(config, 'conversation_workspace_id')
-        print('INFO: conversation_workspace_id defined, updating existing workspace')
-
+    # version
     if not hasattr(config, 'conversation_version') or not getattr(config, 'conversation_version'):
-        print('ERROR: conversation_version parameter not defined.')
+        print("ERROR: 'conversation_version' parameter not defined.")
         exit(1)
     version = getattr(config, 'conversation_version')
-    workspacesUrl += '?version=' + version
-
-    # create/update workspace
-    response = requests.post(workspacesUrl, auth=(username, password), headers={'Content-Type': 'application/json'}, data=json.dumps(workspace, indent=4))
-    responseJson = response.json()
+    # apikey
+    if hasattr(config, 'conversation_apikey') and getattr(config, 'conversation_apikey'):
+        print("INFO: Authentication via apikey.")
+        apikey = getattr(config, 'conversation_apikey')
+        assistant = AssistantV1(
+            version=version,
+            iam_apikey=apikey,
+            url=workspacesUrl
+        )
+    # username + password
+    else:
+        print("INFO: Authentication via username and password.")
+        if not hasattr(config, 'conversation_username') or not getattr(config, 'conversation_username'):
+            print("ERROR: 'conversation_username' parameter not defined.")
+            exit(1)
+        username = getattr(config, 'conversation_username')
+        if not hasattr(config, 'conversation_password') or not getattr(config, 'conversation_password'):
+            print("ERROR: 'conversation_password' parameter not defined.")
+            exit(1)
+        print("INFO: Using username and pasword.")
+        password = getattr(config, 'conversation_password')
+        assistant = AssistantV1(
+            version=version,
+            username=username,
+            password=password,
+            url=workspacesUrl
+        )
+    # workspace id
+    if not hasattr(config, 'conversation_workspace_id') or not getattr(config, 'conversation_workspace_id'):
+        # create workspace
+        print("INFO: 'converstion_workspace_id' parameter not defined, creating new workspace")
+        responseJson = assistant.create_workspace(
+            name=workspace['name'] if 'name' in workspace else None,
+            description=workspace['description'] if 'description' in workspace else None,
+            language=workspace['language'] if 'language' in workspace else None,
+            intents=workspace['intents'] if 'intents' in workspace else None,
+            entities=workspace['entities'] if 'entities' in workspace else None,
+            dialog_nodes=workspace['dialog_nodes'] if 'dialog_nodes' in workspace else None,
+            counterexamples=workspace['counterexamples'] if 'counterexamples' in workspace else None,
+            metadata=workspace['metadata'] if 'metadata' in workspace else None,
+            learning_opt_out=workspace['learning_opt_out'] if 'learning_opt_out' in workspace else None,
+            system_settings=workspace['system_settings'] if 'system_settings' in workspace else None,
+            append=workspace['append'] if 'append' in workspace else None
+        ).get_result()
+    else:
+        # update workspace
+        workspace_id = getattr(config, 'conversation_workspace_id')
+        print("INFO: 'conversation_workspace_id' defined, updating existing workspace")
+        responseJson = assistant.update_workspace(
+            workspace_id=workspace_id,
+            name=workspace['name'] if 'name' in workspace else None,
+            description=workspace['description'] if 'description' in workspace else None,
+            language=workspace['language'] if 'language' in workspace else None,
+            intents=workspace['intents'] if 'intents' in workspace else None,
+            entities=workspace['entities'] if 'entities' in workspace else None,
+            dialog_nodes=workspace['dialog_nodes'] if 'dialog_nodes' in workspace else None,
+            counterexamples=workspace['counterexamples'] if 'counterexamples' in workspace else None,
+            metadata=workspace['metadata'] if 'metadata' in workspace else None,
+            learning_opt_out=workspace['learning_opt_out'] if 'learning_opt_out' in workspace else None,
+            system_settings=workspace['system_settings'] if 'system_settings' in workspace else None,
+            append=workspace['append'] if 'append' in workspace else None
+        ).get_result()
 
     # check errors during upload
     if 'error' in responseJson:
