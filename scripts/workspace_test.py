@@ -96,8 +96,11 @@ if __name__ == '__main__':
                                 outputFile.write("\n")
                             outputFile.write(json.dumps(receivedOutputJson, ensure_ascii=False).encode('utf8'))
                             first = False
-                        eprintf('ERROR: WA not available.\n')
-                        sys.exit(1)
+                        if response.status_code == 400:
+                            eprintf('ERROR: WA not available.\n')
+                            sys.exit(1)
+                        else:
+                            printf('INFO: Unknown status code:%s.\n', response.status_code)
             except IOError:
                 eprintf('ERROR: Cannot open test output file %s\n', args.outputFileName)
                 sys.exit(1)
