@@ -4,7 +4,6 @@
     <autogenerate type="abort" propagate="true" on="false"/>
     <autogenerate type="again" propagate="true" on="false"/>
     <autogenerate type="back" propagate="true" on="false"/>
--->
     <import>E_EN_welcome.xml</import>
     <import>music.xml</import>
     <import>chitchat.xml</import>
@@ -12,5 +11,6 @@
     <import>g_dialogs/E_EN_tests.xml</import>
     <import>g_dialogs/E_EN_T2C_authoring.xml</import>
     <import>g_dialogs/E_CZ_T2C_authoring.xml</import>
+-->
     <import>E_EN_anything_else.xml</import>
 </nodes>
