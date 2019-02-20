@@ -77,7 +77,7 @@ if __name__ == '__main__':
         exit(1)
     workspacesUrl = getattr(config, 'conversation_url')
     if not hasattr(config, 'conversation_workspace_id') or not getattr(config, 'conversation_workspace_id'):
-        print('INFO: conversation_workspace_id parameter not defined, creating new workspace')
+        print('INFO: converstion_workspace_id parameter not defined, creating new workspace')
     else:
         workspacesUrl += '/' + getattr(config, 'conversation_workspace_id')
         print('INFO: conversation_workspace_id defined, updating existing workspace')
