@@ -63,7 +63,11 @@ def convertNode(nodeJSON):
     if 'title' in nodeJSON:
         if nodeJSON['title'] != nodeJSON['dialog_node']: # WA adds title to all uploaded workspaces equal to dialog_name, this is cleanup TODO: remove the conditions when upgrading to new version of WA API
             nodeXML.attrib['title'] = nodeJSON['title']
-
+    #folder
+    if 'type' in nodeJSON and nodeJSON['type'] == 'folder':
+        typeNodeXML = LET.Element('type')
+        typeNodeXML.text = 'folder'
+        nodeXML.append(typeNodeXML)
     #condition
     if 'conditions' in nodeJSON:
         conditionXML = LET.Element('condition')
@@ -90,14 +94,21 @@ def convertNode(nodeJSON):
             convertAll(nodeXML, nodeJSON, 'output')
             if 'text' in nodeJSON['output'] and not isinstance(nodeJSON['output']['text'], basestring):
               outputXML = nodeXML.find('output').find('text').tag = 'textValues'
-            if 'generic' in nodeJSON['output']: # generic nodes has to be of type array
+            if 'generic' in nodeJSON['output']:
+                if nodeJSON['output']['generic'] is None or len(nodeXML.find('output').findall('generic')) == 0:
+                    return
                 if len(nodeXML.find('output').findall('generic')) == 1:
+                     # generic nodes has to be of type array
                     nodeXML.find('output').find('generic').attrib['structure'] = 'listItem'
+                # generic is not none or empty
                 for genericItemXML in nodeXML.find('output').findall('generic'):
-                    if genericItemXML.find('response_type').text == 'text': # TODO check other response_types
-                        if genericItemXML.findall('values') is not None: # values has to be of type array
+                    if genericItemXML.find('response_type') is None:
+                        eprintf("ERROR: 'response_type' is missing in the output of the node " + nodeJSON['dialog_node'] + "\n")
+                    elif genericItemXML.find('response_type').text == 'text': # TODO check other response_types
+                        if genericItemXML.findall('values') is not None:
                             if len(genericItemXML.findall('values')) == 1:
                                 if not 'structure' in genericItemXML.find('values').attrib: # structure is not specified yet
+                                    # values has to be of type array
                                     genericItemXML.find('values').attrib['structure'] = 'listItem'
     #goto
     if 'next_step' in nodeJSON:
@@ -129,6 +140,28 @@ def convertNode(nodeJSON):
                     nodeGoToSelectorXML.text = nodeJSON['next_step']['selector']
         # cant use this because target != dialog_node
         #convertAll(nodeXML, nodeJSON, 'go_to')
+    #digression
+    if 'digress_in' in nodeJSON:
+        digressInXML = LET.Element('digress_in')
+        nodeXML.append(digressInXML)
+        if nodeJSON['digress_in'] is None: # null value
+            digressInXML.attrib[XSI+'nil'] = "true"
+        else:
+            digressInXML.text = nodeJSON['digress_in']
+    if 'digress_out' in nodeJSON:
+        digressOutXML = LET.Element('digress_out')
+        nodeXML.append(digressOutXML)
+        if nodeJSON['digress_out'] is None: # null value
+            digressOutXML.attrib[XSI+'nil'] = "true"
+        else:
+            digressOutXML.text = nodeJSON['digress_out']
+    if 'digress_out_slots' in nodeJSON:
+        digressOutSlotsXML = LET.Element('digress_out_slots')
+        nodeXML.append(digressOutSlotsXML)
+        if nodeJSON['digress_out_slots'] is None: # null value
+            digressOutSlotsXML.attrib[XSI+'nil'] = "true"
+        else:
+            digressOutSlotsXML.text = nodeJSON['digress_out_slots']
     #metadata
     if 'metadata' in nodeJSON:
         metadataXML = LET.Element('metadata')
@@ -198,7 +231,8 @@ def convertAll(upperNodeXML, nodeJSON, keyJSON, nameXML = None):
         nodeXML = LET.Element(str(nameXML))
         upperNodeXML.append(nodeXML)
         nodeXML.text = str(nodeJSON[keyJSON])
-    # int, long, float, complex, boolean?
+        nodeXML.attrib['type'] = "boolean"
+    # int, long, float, complex
     elif isNumber(nodeJSON[keyJSON]):
         nodeXML = LET.Element(str(nameXML))
         upperNodeXML.append(nodeXML)
